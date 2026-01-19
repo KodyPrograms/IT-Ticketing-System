@@ -5,6 +5,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -49,13 +53,20 @@ public class TicketController {
     }
 
     @GetMapping
-    public List<TicketDtos.TicketResponse> listTickets(
+    public Page<TicketDtos.TicketResponse> listTickets(
         @RequestParam(required = false) String assignee,
-        @RequestParam(required = false) TicketTypes.TicketStatus status
+        @RequestParam(required = false) TicketTypes.TicketStatus status,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size,
+        @RequestParam(defaultValue = "createdAt,desc") String sort
     ) {
-        return ticketService.listTickets(assignee, status).stream()
-            .map(TicketDtos.TicketResponse::from)
-            .toList();
+        String[] parts = sort.split(",", 2);
+        String sortField = parts[0];
+        String sortDirection = parts.length > 1 ? parts[1] : "asc";
+        Sort.Direction direction = Sort.Direction.fromOptionalString(sortDirection).orElse(Sort.Direction.ASC);
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(direction, sortField));
+        return ticketService.listTickets(assignee, status, pageRequest)
+            .map(TicketDtos.TicketResponse::from);
     }
 
     @GetMapping("/{id}")
@@ -153,7 +164,7 @@ public class TicketController {
     @GetMapping("/reports/status-counts")
     public List<TicketDtos.TicketStatusCountResponse> statusCounts() {
         Map<TicketTypes.TicketStatus, Long> counts = new HashMap<>();
-        for (Ticket ticket : ticketService.listTickets()) {
+        for (Ticket ticket : ticketService.listTickets(null, null, Pageable.unpaged())) {
             counts.merge(ticket.getStatus(), 1L, Long::sum);
         }
         return counts.entrySet().stream()
@@ -164,7 +175,7 @@ public class TicketController {
     @GetMapping("/reports/assignee-workload")
     public List<TicketDtos.TicketAssigneeWorkloadResponse> assigneeWorkload() {
         Map<String, Long> counts = new HashMap<>();
-        for (Ticket ticket : ticketService.listTickets()) {
+        for (Ticket ticket : ticketService.listTickets(null, null, Pageable.unpaged())) {
             String assignee = ticket.getAssigneeName();
             if (assignee == null || assignee.isBlank()) {
                 assignee = "Unassigned";
@@ -180,7 +191,7 @@ public class TicketController {
     public TicketDtos.TicketResolutionTimeResponse resolutionTime() {
         long resolvedCount = 0;
         long totalSeconds = 0;
-        for (Ticket ticket : ticketService.listTickets()) {
+        for (Ticket ticket : ticketService.listTickets(null, null, Pageable.unpaged())) {
             if (ticket.getResolvedAt() != null && ticket.getCreatedAt() != null) {
                 resolvedCount += 1;
                 totalSeconds += Duration.between(ticket.getCreatedAt(), ticket.getResolvedAt()).getSeconds();

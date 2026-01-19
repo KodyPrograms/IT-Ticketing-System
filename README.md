@@ -70,6 +70,13 @@ Use the returned token for authenticated calls:
 curl -H "Authorization: Bearer <token>" http://localhost:8080/api/tickets
 ```
 
+Ticket list supports pagination and sorting:
+
+```bash
+curl -H "Authorization: Bearer <token>" \
+  "http://localhost:8080/api/tickets?page=0&size=20&sort=createdAt,desc"
+```
+
 ## User management (admin only)
 
 ```bash

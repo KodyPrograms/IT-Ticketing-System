@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,22 +46,21 @@ public class TicketService {
     }
 
     @Transactional(readOnly = true)
-    public List<Ticket> listTickets() {
-        return ticketRepository.findAll();
-    }
-
-    @Transactional(readOnly = true)
-    public List<Ticket> listTickets(String assigneeName, TicketTypes.TicketStatus status) {
+    public Page<Ticket> listTickets(
+        String assigneeName,
+        TicketTypes.TicketStatus status,
+        Pageable pageable
+    ) {
         if (assigneeName != null && status != null) {
-            return ticketRepository.findByAssigneeNameAndStatus(assigneeName, status);
+            return ticketRepository.findByAssigneeNameAndStatus(assigneeName, status, pageable);
         }
         if (assigneeName != null) {
-            return ticketRepository.findByAssigneeName(assigneeName);
+            return ticketRepository.findByAssigneeName(assigneeName, pageable);
         }
         if (status != null) {
-            return ticketRepository.findByStatus(status);
+            return ticketRepository.findByStatus(status, pageable);
         }
-        return ticketRepository.findAll();
+        return ticketRepository.findAll(pageable);
     }
 
     @Transactional(readOnly = true)
