@@ -1,0 +1,15 @@
+CREATE TABLE ticket_comments (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  ticket_id BIGINT NOT NULL,
+  visibility VARCHAR(16) NOT NULL,
+  body VARCHAR(2000) NOT NULL,
+  actor_role VARCHAR(16) NOT NULL,
+  actor_name VARCHAR(120),
+  created_at DATETIME NOT NULL,
+  CONSTRAINT fk_ticket_comments_ticket
+    FOREIGN KEY (ticket_id) REFERENCES tickets (id)
+    ON DELETE CASCADE
+);
+
+CREATE INDEX idx_ticket_comments_ticket_id ON ticket_comments (ticket_id);
+CREATE INDEX idx_ticket_comments_visibility ON ticket_comments (visibility);

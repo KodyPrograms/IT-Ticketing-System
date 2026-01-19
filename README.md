@@ -46,6 +46,14 @@ mvn spring-boot:run
 
 The app starts on http://localhost:8080.
 
+## Default credentials (dev only)
+
+- Requester: `requester` / `requester123`
+- Engineer: `engineer` / `engineer123`
+- Admin: `admin` / `admin123`
+
+These users are stored in the local database and seeded via migration `V5__create_users.sql`.
+
 ## Useful Docker commands
 
 - Stop the DB: `docker stop ticketing-mysql`

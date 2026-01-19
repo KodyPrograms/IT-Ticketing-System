@@ -1,0 +1,17 @@
+CREATE TABLE ticket_audit (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  ticket_id BIGINT NOT NULL,
+  action VARCHAR(24) NOT NULL,
+  field_name VARCHAR(64),
+  old_value VARCHAR(512),
+  new_value VARCHAR(512),
+  actor_role VARCHAR(16) NOT NULL,
+  actor_name VARCHAR(120),
+  created_at DATETIME NOT NULL,
+  CONSTRAINT fk_ticket_audit_ticket
+    FOREIGN KEY (ticket_id) REFERENCES tickets (id)
+    ON DELETE CASCADE
+);
+
+CREATE INDEX idx_ticket_audit_ticket_id ON ticket_audit (ticket_id);
+CREATE INDEX idx_ticket_audit_created_at ON ticket_audit (created_at);

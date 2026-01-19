@@ -1,0 +1,15 @@
+CREATE TABLE ticket_assignments (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  ticket_id BIGINT NOT NULL,
+  previous_assignee VARCHAR(120),
+  new_assignee VARCHAR(120),
+  actor_role VARCHAR(16) NOT NULL,
+  actor_name VARCHAR(120),
+  created_at DATETIME NOT NULL,
+  CONSTRAINT fk_ticket_assignments_ticket
+    FOREIGN KEY (ticket_id) REFERENCES tickets (id)
+    ON DELETE CASCADE
+);
+
+CREATE INDEX idx_ticket_assignments_ticket_id ON ticket_assignments (ticket_id);
+CREATE INDEX idx_ticket_assignments_new_assignee ON ticket_assignments (new_assignee);
