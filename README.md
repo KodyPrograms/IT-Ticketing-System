@@ -77,6 +77,13 @@ curl -H "Authorization: Bearer <token>" \
   "http://localhost:8080/api/tickets?page=0&size=20&sort=createdAt,desc"
 ```
 
+## API docs (OpenAPI/Swagger)
+
+Start the app and visit:
+
+- OpenAPI JSON: http://localhost:8080/v3/api-docs
+- Swagger UI: http://localhost:8080/swagger-ui/index.html
+
 ## User management (admin only)
 
 ```bash
