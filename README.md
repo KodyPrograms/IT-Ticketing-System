@@ -105,6 +105,17 @@ curl -X PATCH http://localhost:8080/api/users/1/password \
   -d '{"password":"newPass123"}'
 ```
 
+## User self-service
+
+```bash
+curl -H "Authorization: Bearer <token>" http://localhost:8080/api/users/me
+
+curl -X PATCH http://localhost:8080/api/users/me/password \
+  -H "Authorization: Bearer <token>" \
+  -H 'Content-Type: application/json' \
+  -d '{"currentPassword":"admin123","newPassword":"newPass123"}'
+```
+
 ## Useful Docker commands
 
 - Stop the DB: `docker stop ticketing-mysql`

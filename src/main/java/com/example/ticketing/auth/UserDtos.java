@@ -84,6 +84,31 @@ public final class UserDtos {
         }
     }
 
+    public static class UserPasswordChangeRequest {
+        @NotBlank
+        private String currentPassword;
+
+        @NotBlank
+        @Size(min = 8, max = 128)
+        private String newPassword;
+
+        public String getCurrentPassword() {
+            return currentPassword;
+        }
+
+        public void setCurrentPassword(String currentPassword) {
+            this.currentPassword = currentPassword;
+        }
+
+        public String getNewPassword() {
+            return newPassword;
+        }
+
+        public void setNewPassword(String newPassword) {
+            this.newPassword = newPassword;
+        }
+    }
+
     public static class UserResponse {
         private Long id;
         private String username;
