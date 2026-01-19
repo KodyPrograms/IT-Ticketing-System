@@ -54,20 +54,39 @@ The app starts on http://localhost:8080.
 
 These users are stored in the local database and seeded via migration `V5__create_users.sql`.
 
+## Authentication (JWT)
+
+Login to get a token:
+
+```bash
+curl -X POST http://localhost:8080/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"admin123"}'
+```
+
+Use the returned token for authenticated calls:
+
+```bash
+curl -H "Authorization: Bearer <token>" http://localhost:8080/api/tickets
+```
+
 ## User management (admin only)
 
 ```bash
-curl -u admin:admin123 -X POST http://localhost:8080/api/users \
+curl -X POST http://localhost:8080/api/users \
+  -H "Authorization: Bearer <token>" \
   -H 'Content-Type: application/json' \
   -d '{"username":"newuser","password":"changeMe123","role":"ENGINEER","enabled":true}'
 
-curl -u admin:admin123 http://localhost:8080/api/users
+curl -H "Authorization: Bearer <token>" http://localhost:8080/api/users
 
-curl -u admin:admin123 -X PATCH http://localhost:8080/api/users/1/enabled \
+curl -X PATCH http://localhost:8080/api/users/1/enabled \
+  -H "Authorization: Bearer <token>" \
   -H 'Content-Type: application/json' \
   -d '{"enabled":false}'
 
-curl -u admin:admin123 -X PATCH http://localhost:8080/api/users/1/password \
+curl -X PATCH http://localhost:8080/api/users/1/password \
+  -H "Authorization: Bearer <token>" \
   -H 'Content-Type: application/json' \
   -d '{"password":"newPass123"}'
 ```
