@@ -116,6 +116,21 @@ curl -X PATCH http://localhost:8080/api/users/me/password \
   -d '{"currentPassword":"admin123","newPassword":"newPass123"}'
 ```
 
+## Reporting filters
+
+Reports accept optional ISO-8601 date ranges (UTC recommended).
+
+```bash
+curl -H "Authorization: Bearer <token>" \
+  "http://localhost:8080/api/tickets/reports/status-counts?from=2026-01-01T00:00:00&to=2026-02-01T00:00:00"
+
+curl -H "Authorization: Bearer <token>" \
+  "http://localhost:8080/api/tickets/reports/assignee-workload?status=IN_PROGRESS&from=2026-01-01T00:00:00"
+
+curl -H "Authorization: Bearer <token>" \
+  "http://localhost:8080/api/tickets/reports/resolution-time?from=2026-01-01T00:00:00"
+```
+
 ## Useful Docker commands
 
 - Stop the DB: `docker stop ticketing-mysql`

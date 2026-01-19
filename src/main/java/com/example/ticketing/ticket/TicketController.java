@@ -1,6 +1,7 @@
 package com.example.ticketing.ticket;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -162,9 +164,19 @@ public class TicketController {
     }
 
     @GetMapping("/reports/status-counts")
-    public List<TicketDtos.TicketStatusCountResponse> statusCounts() {
+    public List<TicketDtos.TicketStatusCountResponse> statusCounts(
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        LocalDateTime from,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        LocalDateTime to
+    ) {
         Map<TicketTypes.TicketStatus, Long> counts = new HashMap<>();
         for (Ticket ticket : ticketService.listTickets(null, null, Pageable.unpaged())) {
+            if (!withinRange(ticket.getCreatedAt(), from, to)) {
+                continue;
+            }
             counts.merge(ticket.getStatus(), 1L, Long::sum);
         }
         return counts.entrySet().stream()
@@ -173,9 +185,23 @@ public class TicketController {
     }
 
     @GetMapping("/reports/assignee-workload")
-    public List<TicketDtos.TicketAssigneeWorkloadResponse> assigneeWorkload() {
+    public List<TicketDtos.TicketAssigneeWorkloadResponse> assigneeWorkload(
+        @RequestParam(required = false) TicketTypes.TicketStatus status,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        LocalDateTime from,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        LocalDateTime to
+    ) {
         Map<String, Long> counts = new HashMap<>();
         for (Ticket ticket : ticketService.listTickets(null, null, Pageable.unpaged())) {
+            if (status != null && ticket.getStatus() != status) {
+                continue;
+            }
+            if (!withinRange(ticket.getCreatedAt(), from, to)) {
+                continue;
+            }
             String assignee = ticket.getAssigneeName();
             if (assignee == null || assignee.isBlank()) {
                 assignee = "Unassigned";
@@ -188,11 +214,21 @@ public class TicketController {
     }
 
     @GetMapping("/reports/resolution-time")
-    public TicketDtos.TicketResolutionTimeResponse resolutionTime() {
+    public TicketDtos.TicketResolutionTimeResponse resolutionTime(
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        LocalDateTime from,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        LocalDateTime to
+    ) {
         long resolvedCount = 0;
         long totalSeconds = 0;
         for (Ticket ticket : ticketService.listTickets(null, null, Pageable.unpaged())) {
             if (ticket.getResolvedAt() != null && ticket.getCreatedAt() != null) {
+                if (!withinRange(ticket.getResolvedAt(), from, to)) {
+                    continue;
+                }
                 resolvedCount += 1;
                 totalSeconds += Duration.between(ticket.getCreatedAt(), ticket.getResolvedAt()).getSeconds();
             }
@@ -206,6 +242,19 @@ public class TicketController {
             averageMinutes,
             averageHours
         );
+    }
+
+    private boolean withinRange(LocalDateTime value, LocalDateTime from, LocalDateTime to) {
+        if (value == null) {
+            return false;
+        }
+        if (from != null && value.isBefore(from)) {
+            return false;
+        }
+        if (to != null && value.isAfter(to)) {
+            return false;
+        }
+        return true;
     }
 
     private TicketTypes.TicketRole resolveActorRole(Authentication authentication) {
