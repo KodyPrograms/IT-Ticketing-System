@@ -140,4 +140,48 @@ public final class UserDtos {
             return enabled;
         }
     }
+
+    public static class UserAuditResponse {
+        private Long id;
+        private UserAuditAction action;
+        private String actorUsername;
+        private TicketTypes.TicketRole actorRole;
+        private String targetUsername;
+        private java.time.LocalDateTime createdAt;
+
+        public static UserAuditResponse from(UserAudit audit) {
+            UserAuditResponse response = new UserAuditResponse();
+            response.id = audit.getId();
+            response.action = audit.getAction();
+            response.actorUsername = audit.getActorUsername();
+            response.actorRole = audit.getActorRole();
+            response.targetUsername = audit.getTargetUsername();
+            response.createdAt = audit.getCreatedAt();
+            return response;
+        }
+
+        public Long getId() {
+            return id;
+        }
+
+        public UserAuditAction getAction() {
+            return action;
+        }
+
+        public String getActorUsername() {
+            return actorUsername;
+        }
+
+        public TicketTypes.TicketRole getActorRole() {
+            return actorRole;
+        }
+
+        public String getTargetUsername() {
+            return targetUsername;
+        }
+
+        public java.time.LocalDateTime getCreatedAt() {
+            return createdAt;
+        }
+    }
 }

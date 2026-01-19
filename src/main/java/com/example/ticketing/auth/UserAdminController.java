@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -51,6 +52,22 @@ public class UserAdminController {
             .toList();
     }
 
+    @GetMapping("/audit")
+    public List<UserDtos.UserAuditResponse> listAudit(
+        @RequestParam(required = false) String targetUsername,
+        Authentication authentication
+    ) {
+        requireAdmin(authentication);
+        if (targetUsername == null || targetUsername.isBlank()) {
+            return userAdminService.listAudit().stream()
+                .map(UserDtos.UserAuditResponse::from)
+                .toList();
+        }
+        return userAdminService.listAudit(targetUsername).stream()
+            .map(UserDtos.UserAuditResponse::from)
+            .toList();
+    }
+
     @PatchMapping("/{id}/enabled")
     public UserDtos.UserResponse updateEnabled(
         @PathVariable Long id,
@@ -68,7 +85,14 @@ public class UserAdminController {
         Authentication authentication
     ) {
         requireAdmin(authentication);
-        return UserDtos.UserResponse.from(userAdminService.resetPassword(id, request.getPassword()));
+        return UserDtos.UserResponse.from(
+            userAdminService.resetPassword(
+                id,
+                request.getPassword(),
+                authentication.getName(),
+                resolveRole(authentication)
+            )
+        );
     }
 
     private void requireAdmin(Authentication authentication) {
@@ -78,5 +102,15 @@ public class UserAdminController {
             }
         }
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required.");
+    }
+
+    private com.example.ticketing.ticket.TicketTypes.TicketRole resolveRole(Authentication authentication) {
+        for (GrantedAuthority authority : authentication.getAuthorities()) {
+            String role = authority.getAuthority();
+            if (role.startsWith("ROLE_")) {
+                return com.example.ticketing.ticket.TicketTypes.TicketRole.valueOf(role.substring(5));
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Authenticated user does not have a role.");
     }
 }

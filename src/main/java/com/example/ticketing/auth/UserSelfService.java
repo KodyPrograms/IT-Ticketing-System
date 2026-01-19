@@ -11,13 +11,16 @@ import org.springframework.web.server.ResponseStatusException;
 public class UserSelfService {
     private final UserAccountRepository userAccountRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserAuditService userAuditService;
 
     public UserSelfService(
         UserAccountRepository userAccountRepository,
-        PasswordEncoder passwordEncoder
+        PasswordEncoder passwordEncoder,
+        UserAuditService userAuditService
     ) {
         this.userAccountRepository = userAccountRepository;
         this.passwordEncoder = passwordEncoder;
+        this.userAuditService = userAuditService;
     }
 
     @Transactional(readOnly = true)
@@ -32,5 +35,11 @@ public class UserSelfService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Current password is incorrect.");
         }
         user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userAuditService.log(
+            UserAuditAction.PASSWORD_CHANGED,
+            user.getUsername(),
+            user.getRole(),
+            user.getUsername()
+        );
     }
 }

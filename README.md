@@ -116,6 +116,15 @@ curl -X PATCH http://localhost:8080/api/users/me/password \
   -d '{"currentPassword":"admin123","newPassword":"newPass123"}'
 ```
 
+## User audit (admin only)
+
+```bash
+curl -H "Authorization: Bearer <token>" http://localhost:8080/api/users/audit
+
+curl -H "Authorization: Bearer <token>" \
+  "http://localhost:8080/api/users/audit?targetUsername=engineer"
+```
+
 ## Reporting filters
 
 Reports accept optional ISO-8601 date ranges (UTC recommended).

@@ -19,10 +19,16 @@ import jakarta.validation.Valid;
 public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final UserAuditService userAuditService;
 
-    public AuthController(AuthenticationManager authenticationManager, JwtService jwtService) {
+    public AuthController(
+        AuthenticationManager authenticationManager,
+        JwtService jwtService,
+        UserAuditService userAuditService
+    ) {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.userAuditService = userAuditService;
     }
 
     @PostMapping("/login")
@@ -33,6 +39,14 @@ public class AuthController {
             new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
         UserDetails user = (UserDetails) authentication.getPrincipal();
+        if (user instanceof UserAccount account) {
+            userAuditService.log(
+                UserAuditAction.LOGIN,
+                account.getUsername(),
+                account.getRole(),
+                account.getUsername()
+            );
+        }
         String token = jwtService.generateToken(user);
         return ResponseEntity.ok(new AuthDtos.LoginResponse(token, jwtService.getExpirationSeconds()));
     }

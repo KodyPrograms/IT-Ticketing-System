@@ -16,13 +16,16 @@ import org.springframework.http.HttpStatus;
 public class UserAdminService {
     private final UserAccountRepository userAccountRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserAuditService userAuditService;
 
     public UserAdminService(
         UserAccountRepository userAccountRepository,
-        PasswordEncoder passwordEncoder
+        PasswordEncoder passwordEncoder,
+        UserAuditService userAuditService
     ) {
         this.userAccountRepository = userAccountRepository;
         this.passwordEncoder = passwordEncoder;
+        this.userAuditService = userAuditService;
     }
 
     public UserAccount createUser(
@@ -49,15 +52,36 @@ public class UserAdminService {
         return userAccountRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
+    public List<UserAudit> listAudit() {
+        return userAuditService.listAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserAudit> listAudit(String targetUsername) {
+        return userAuditService.listForTarget(targetUsername);
+    }
+
     public UserAccount updateEnabled(Long id, boolean enabled) {
         UserAccount user = getUser(id);
         user.setEnabled(enabled);
         return user;
     }
 
-    public UserAccount resetPassword(Long id, String rawPassword) {
+    public UserAccount resetPassword(
+        Long id,
+        String rawPassword,
+        String actorUsername,
+        TicketTypes.TicketRole actorRole
+    ) {
         UserAccount user = getUser(id);
         user.setPasswordHash(passwordEncoder.encode(rawPassword));
+        userAuditService.log(
+            UserAuditAction.PASSWORD_RESET,
+            actorUsername,
+            actorRole,
+            user.getUsername()
+        );
         return user;
     }
 
