@@ -35,6 +35,18 @@ public class UserAccount implements UserDetails {
     @Column(nullable = false, length = 16)
     private TicketTypes.TicketRole role;
 
+    @Column(name = "display_name", length = 120)
+    private String displayName;
+
+    @Column(name = "title", length = 120)
+    private String title;
+
+    @Column(name = "avatar_url", length = 255)
+    private String avatarUrl;
+
+    @Column(name = "email", length = 160)
+    private String email;
+
     @Column(nullable = false)
     private boolean enabled = true;
 
@@ -48,6 +60,38 @@ public class UserAccount implements UserDetails {
 
     public void setRole(TicketTypes.TicketRole role) {
         this.role = role;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public void setUsername(String username) {

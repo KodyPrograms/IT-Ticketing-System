@@ -1,0 +1,4 @@
+ALTER TABLE users
+  ADD COLUMN display_name VARCHAR(120),
+  ADD COLUMN title VARCHAR(120),
+  ADD COLUMN avatar_url VARCHAR(255);

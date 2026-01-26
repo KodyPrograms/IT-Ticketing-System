@@ -26,7 +26,14 @@ public class SecurityConfig {
     ) throws Exception {
         return http
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/login").permitAll()
+                .requestMatchers(
+                    "/",
+                    "/index.html",
+                    "/styles.css",
+                    "/app.js",
+                    "/favicon.ico",
+                    "/api/auth/login"
+                ).permitAll()
                 .requestMatchers(
                     "/v3/api-docs",
                     "/v3/api-docs/**",

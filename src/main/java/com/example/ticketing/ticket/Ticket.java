@@ -44,6 +44,9 @@ public class Ticket {
     @Column(name = "requester_name", nullable = false, length = 120)
     private String requesterName;
 
+    @Column(name = "requester_username", nullable = false, length = 80)
+    private String requesterUsername;
+
     @Column(name = "requester_email", length = 160)
     private String requesterEmail;
 
@@ -135,6 +138,14 @@ public class Ticket {
 
     public void setRequesterName(String requesterName) {
         this.requesterName = requesterName;
+    }
+
+    public String getRequesterUsername() {
+        return requesterUsername;
+    }
+
+    public void setRequesterUsername(String requesterUsername) {
+        this.requesterUsername = requesterUsername;
     }
 
     public String getRequesterEmail() {

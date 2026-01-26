@@ -2,6 +2,7 @@ package com.example.ticketing.auth;
 
 import com.example.ticketing.ticket.TicketTypes;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -23,6 +24,22 @@ public final class UserDtos {
         private TicketTypes.TicketRole role;
 
         private Boolean enabled;
+
+        @NotBlank
+        @Size(max = 120)
+        private String displayName;
+
+        @NotBlank
+        @Size(max = 120)
+        private String title;
+
+        @Size(max = 255)
+        private String avatarUrl;
+
+        @NotBlank
+        @Email
+        @Size(max = 160)
+        private String email;
 
         public String getUsername() {
             return username;
@@ -55,6 +72,38 @@ public final class UserDtos {
         public void setEnabled(Boolean enabled) {
             this.enabled = enabled;
         }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public void setDisplayName(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public void setTitle(String title) {
+            this.title = title;
+        }
+
+        public String getAvatarUrl() {
+            return avatarUrl;
+        }
+
+        public void setAvatarUrl(String avatarUrl) {
+            this.avatarUrl = avatarUrl;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+
+        public void setEmail(String email) {
+            this.email = email;
+        }
     }
 
     public static class UserEnabledRequest {
@@ -67,6 +116,69 @@ public final class UserDtos {
 
         public void setEnabled(Boolean enabled) {
             this.enabled = enabled;
+        }
+    }
+
+    public static class UserRoleUpdateRequest {
+        @NotNull
+        private TicketTypes.TicketRole role;
+
+        public TicketTypes.TicketRole getRole() {
+            return role;
+        }
+
+        public void setRole(TicketTypes.TicketRole role) {
+            this.role = role;
+        }
+    }
+
+    public static class UserProfileUpdateRequest {
+        @NotBlank
+        @Size(max = 120)
+        private String displayName;
+
+        @NotBlank
+        @Size(max = 120)
+        private String title;
+
+        @Size(max = 255)
+        private String avatarUrl;
+
+        @NotBlank
+        @Email
+        @Size(max = 160)
+        private String email;
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public void setDisplayName(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public void setTitle(String title) {
+            this.title = title;
+        }
+
+        public String getAvatarUrl() {
+            return avatarUrl;
+        }
+
+        public void setAvatarUrl(String avatarUrl) {
+            this.avatarUrl = avatarUrl;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+
+        public void setEmail(String email) {
+            this.email = email;
         }
     }
 
@@ -114,6 +226,10 @@ public final class UserDtos {
         private String username;
         private TicketTypes.TicketRole role;
         private boolean enabled;
+        private String displayName;
+        private String title;
+        private String avatarUrl;
+        private String email;
 
         public static UserResponse from(UserAccount user) {
             UserResponse response = new UserResponse();
@@ -121,6 +237,10 @@ public final class UserDtos {
             response.username = user.getUsername();
             response.role = user.getRole();
             response.enabled = user.isEnabled();
+            response.displayName = user.getDisplayName();
+            response.title = user.getTitle();
+            response.avatarUrl = user.getAvatarUrl();
+            response.email = user.getEmail();
             return response;
         }
 
@@ -138,6 +258,22 @@ public final class UserDtos {
 
         public boolean isEnabled() {
             return enabled;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public String getAvatarUrl() {
+            return avatarUrl;
+        }
+
+        public String getEmail() {
+            return email;
         }
     }
 

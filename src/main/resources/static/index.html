@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ticketing Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="app-shell" id="app-shell">
+    <aside class="nav-card" id="nav-card">
+      <div class="logo">
+        <span class="logo-mark" id="logo-mark">
+          <img id="logo-mark-img" alt="User avatar" />
+          <span class="logo-mark-fallback" id="logo-mark-fallback">IT</span>
+        </span>
+        <div>
+          <strong id="sidebar-username">Ticketing</strong>
+          <span id="sidebar-role">Console</span>
+        </div>
+      </div>
+      <button class="ghost nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-menu">Menu</button>
+      <div class="nav-menu" id="nav-menu">
+      <button class="ghost theme-toggle" id="theme-toggle" type="button" aria-pressed="false" aria-label="Toggle dark mode">
+        <span class="theme-label">Dark mode</span>
+        <span class="toggle-track">
+          <span class="toggle-thumb"></span>
+        </span>
+      </button>
+      <nav class="nav-links">
+        <a href="#/tickets" data-role="ROLE_REQUESTER,ROLE_ENGINEER,ROLE_ADMIN">Tickets</a>
+        <a href="#/reports" data-role="ROLE_ENGINEER,ROLE_ADMIN">Reports</a>
+        <a href="#/admin" data-role="ROLE_ADMIN,ROLE_ENGINEER">Users</a>
+        <a href="#/profile" data-role="ROLE_REQUESTER,ROLE_ENGINEER,ROLE_ADMIN">Profile</a>
+      </nav>
+      <button class="ghost" id="logout-btn" type="button">Sign out</button>
+      </div>
+    </aside>
+
+    <div class="app-main">
+      <main class="grid">
+    <section class="panel view" id="login-view" data-view="login">
+      <header>
+        <h3>Sign in</h3>
+        <p>Authenticate to access tickets, reports, and admin tools.</p>
+      </header>
+      <form id="login-form" class="stack">
+        <div id="login-error" class="error-banner hidden" role="alert"></div>
+        <label>
+          Username
+          <input type="text" name="username" autocomplete="username" required />
+        </label>
+        <label>
+          Password
+          <input type="password" name="password" autocomplete="current-password" required />
+        </label>
+        <button type="submit">Login</button>
+      </form>
+    </section>
+
+    <section class="panel view" id="tickets-panel" data-view="tickets">
+      <header class="panel-header">
+        <div>
+          <h3>Tickets</h3>
+          <p>Browse and select a ticket to manage.</p>
+        </div>
+        <button id="open-create-modal" class="icon-btn" type="button" aria-label="Create ticket">
+          +
+        </button>
+      </header>
+      <div class="toolbar">
+        <input id="filter-search" placeholder="Search tickets" />
+        <select id="filter-assignee">
+          <option value="">All assignees</option>
+          <option value="UNASSIGNED">Unassigned</option>
+        </select>
+        <select id="filter-status">
+          <option value="">All statuses</option>
+          <option value="NEW">New</option>
+          <option value="IN_PROGRESS">In progress</option>
+          <option value="BLOCKED">Blocked</option>
+          <option value="CLOSED">Closed</option>
+        </select>
+        <select id="filter-sort">
+          <option value="createdAt,desc">Newest</option>
+          <option value="createdAt,asc">Oldest</option>
+          <option value="priority,desc">Priority (high → low)</option>
+          <option value="priority,asc">Priority (low → high)</option>
+          <option value="status,asc">Status</option>
+          <option value="assigneeDisplay,asc">Assignee (A → Z)</option>
+        </select>
+        <button id="refresh-btn" class="secondary" type="button">Refresh</button>
+        <button id="clear-filters-btn" class="ghost" type="button">Clear filters</button>
+        <label class="inline-toggle">
+          <input type="checkbox" id="auto-refresh-toggle" />
+          Auto refresh
+        </label>
+        <span class="muted" id="refresh-status"></span>
+      </div>
+      <div class="ticket-board" id="ticket-board">
+        <div class="ticket-list-pane">
+          <div id="tickets-list" class="ticket-list"></div>
+          <div id="tickets-sentinel" class="muted">Loading more…</div>
+        </div>
+        <div class="ticket-detail-pane">
+          <div id="ticket-details-panel" class="ticket-drawer hidden">
+            <header class="drawer-header">
+              <h3>Ticket details</h3>
+              <button id="close-details" class="ghost" type="button">Close</button>
+            </header>
+            <div id="ticket-details" class="empty">Select a ticket to view details.</div>
+            <div id="ticket-actions" class="stack hidden">
+              <div class="split">
+                <label>
+                  Status
+                  <select id="status-select">
+                    <option value="NEW">New</option>
+                    <option value="IN_PROGRESS">In progress</option>
+                    <option value="BLOCKED">Blocked</option>
+                    <option value="CLOSED">Closed</option>
+                  </select>
+                </label>
+                <label>
+                  Priority
+                  <select id="priority-select">
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
+                    <option value="URGENT">Urgent</option>
+                  </select>
+                </label>
+              </div>
+              <div class="split">
+                <label class="full-span">
+                  Assignee
+                  <select id="assignee-input">
+                    <option value="UNASSIGNED">Unassigned</option>
+                  </select>
+                </label>
+              </div>
+              <div class="button-row">
+                <button id="update-status-btn" type="button">Update status</button>
+                <button id="update-priority-btn" class="secondary" type="button">Update priority</button>
+                <button id="update-assignee-btn" class="secondary" type="button">Update assignee</button>
+                <button id="assign-me-btn" class="ghost" type="button">Assign to me</button>
+              </div>
+            </div>
+            <div class="stack hidden" id="comment-panel">
+              <h4>Add comment</h4>
+              <label>
+                Visibility
+                <select id="comment-visibility">
+                  <option value="PUBLIC">Public</option>
+                  <option value="INTERNAL">Internal</option>
+                </select>
+              </label>
+              <label>
+                Comment
+                <textarea id="comment-body" rows="3" maxlength="2000" required></textarea>
+              </label>
+              <button id="add-comment-btn" type="button">Add comment</button>
+            </div>
+            <div class="ticket-tabs">
+              <button class="tab-btn active" type="button" data-tab="comments">Comments</button>
+              <button class="tab-btn" type="button" data-tab="audit">Audit</button>
+              <button class="tab-btn" type="button" data-tab="assignments">Assignments</button>
+            </div>
+            <div class="tab-panel active" data-tab-panel="comments">
+              <h4>Comments</h4>
+              <div id="comments-list" class="list"></div>
+            </div>
+            <div class="tab-panel" data-tab-panel="audit">
+              <div class="panel-header compact">
+                <h4>Audit</h4>
+                <button id="audit-download-btn" class="ghost" type="button">Download CSV</button>
+              </div>
+              <div id="audit-list" class="list"></div>
+            </div>
+            <div class="tab-panel" data-tab-panel="assignments">
+              <h4>Assignments</h4>
+              <div id="assignments-list" class="list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel view" id="reports-panel" data-view="reports">
+      <header>
+        <h3>Reports</h3>
+        <p>Quick operational snapshots (defaults to the last 30 days).</p>
+      </header>
+      <div class="stack">
+        <label>
+          Date from
+          <input id="report-from" type="date" />
+        </label>
+        <label>
+          Date to
+          <input id="report-to" type="date" />
+        </label>
+        <div class="button-row report-buttons">
+          <button id="engineer-report-btn" class="secondary" type="button">Engineer report</button>
+          <button id="requester-report-btn" class="secondary" type="button">Requester report</button>
+          <button id="backlog-report-btn" class="secondary" type="button">Backlog aging</button>
+          <button id="sla-report-btn" class="secondary" type="button">SLA buckets</button>
+          <button id="report-download-btn" class="ghost" type="button">Download CSV</button>
+        </div>
+      </div>
+      <div id="report-output" class="list"></div>
+    </section>
+
+    <section class="panel view" id="admin-panel" data-view="admin">
+      <header>
+        <h3>User admin</h3>
+        <p>Manage users and review user audit events.</p>
+      </header>
+      <div class="stack">
+        <div class="split-row">
+          <div>
+            <div class="panel-header compact">
+              <h4>Users</h4>
+              <button id="open-user-modal" class="icon-btn" type="button" aria-label="Create user">
+                +
+              </button>
+            </div>
+            <div class="toolbar">
+              <input id="user-search" placeholder="Search username" />
+              <button id="user-search-btn" class="secondary" type="button">Search</button>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Enabled</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-users"></tbody>
+              </table>
+            </div>
+            <div class="pager">
+              <button id="users-prev" class="secondary" type="button">Prev</button>
+              <span id="users-page">Page 1</span>
+              <button id="users-next" class="secondary" type="button">Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel view" id="profile-panel" data-view="profile">
+      <header>
+        <h3>My profile</h3>
+        <p>View your account and update your password.</p>
+      </header>
+      <div class="profile-layout">
+        <div class="profile-summary" id="profile-card">
+          <div class="avatar" id="profile-avatar">
+            <img id="profile-avatar-preview" alt="User avatar" />
+            <div class="avatar-fallback" id="profile-avatar-fallback">U</div>
+          </div>
+          <div class="list" id="profile-details"></div>
+        </div>
+        <div class="profile-forms">
+          <div class="profile-panel">
+            <h4>Profile details</h4>
+            <div class="stack">
+              <label>
+                Display name
+                <input type="text" id="profile-display-name" maxlength="120" />
+              </label>
+              <label>
+                Title
+                <input type="text" id="profile-title" maxlength="120" />
+              </label>
+              <label>
+                Email
+                <input type="email" id="profile-email" maxlength="160" required />
+              </label>
+              <label>
+                Avatar URL
+                <input type="text" id="profile-avatar-url" maxlength="255" />
+              </label>
+              <div class="button-row">
+                <button id="profile-save-btn" type="button">Save profile</button>
+              </div>
+            </div>
+          </div>
+          <div class="profile-panel">
+            <h4>Security</h4>
+            <form id="profile-password-form" class="stack">
+              <label>
+                Current password
+                <input type="password" name="currentPassword" required />
+              </label>
+              <label>
+                New password
+                <input type="password" name="newPassword" minlength="8" required />
+              </label>
+              <button type="submit">Change password</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+      </main>
+      <footer class="footer">
+        <span>Ticketing Console • Internal demo</span>
+        <span id="api-status">API status: idle</span>
+      </footer>
+      <div class="modal hidden" id="create-modal" aria-hidden="true">
+        <div class="modal-content">
+          <header class="panel-header">
+            <div>
+              <h3>Create ticket</h3>
+              <p>Start a new request with priority and category.</p>
+            </div>
+            <button id="close-create-modal" class="ghost" type="button">Close</button>
+          </header>
+          <form id="create-form" class="stack">
+            <label>
+              Title
+              <input type="text" name="title" maxlength="160" required />
+            </label>
+            <label>
+              Description
+              <textarea name="description" rows="4" required></textarea>
+            </label>
+            <div class="split">
+              <label>
+                Priority
+                <select name="priority" required>
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                  <option value="URGENT">Urgent</option>
+                </select>
+              </label>
+              <label>
+                Category
+                <select name="category" required>
+                  <option value="SOFTWARE">Software</option>
+                  <option value="ACCESS">Access</option>
+                  <option value="NETWORK">Network</option>
+                  <option value="HARDWARE">Hardware</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              Requester name
+              <input type="text" name="requesterName" maxlength="120" required />
+            </label>
+            <label>
+              Requester email
+              <input type="email" name="requesterEmail" maxlength="160" />
+            </label>
+            <label>
+              Assignee (optional)
+              <select name="assigneeName" id="assignee-create">
+                <option value="UNASSIGNED">Unassigned</option>
+              </select>
+            </label>
+            <button type="submit">Create ticket</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="user-create-modal" aria-hidden="true">
+    <div class="modal-content">
+      <header class="panel-header">
+        <div>
+          <h3>Create user</h3>
+          <p>Invite a teammate with the right access.</p>
+        </div>
+        <button id="close-user-modal" class="ghost" type="button">Close</button>
+      </header>
+      <form id="admin-create-form" class="stack">
+        <label>
+          Username
+          <input name="username" required />
+        </label>
+        <label>
+          Email
+          <input name="email" type="email" maxlength="160" required />
+        </label>
+        <label>
+          Password
+          <input name="password" type="password" minlength="8" required />
+        </label>
+        <label>
+          Display name
+          <input name="displayName" maxlength="120" required />
+        </label>
+        <label>
+          Title
+          <input name="title" maxlength="120" required />
+        </label>
+        <label>
+          Avatar URL
+          <input name="avatarUrl" maxlength="255" />
+        </label>
+        <label>
+          Role
+          <select name="role" id="admin-role-select" required>
+            <option value="REQUESTER">Requester</option>
+            <option value="ENGINEER">Engineer</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </label>
+        <button type="submit">Create user</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="user-detail-modal" aria-hidden="true">
+    <div class="modal-content">
+      <header class="panel-header">
+        <div>
+          <h3>User details</h3>
+          <p id="user-detail-header">Select a user to manage.</p>
+        </div>
+        <button id="close-user-detail" class="ghost" type="button">Close</button>
+      </header>
+      <div class="stack">
+        <div class="split">
+          <label>
+            Display name
+            <input type="text" id="user-display-name" maxlength="120" required />
+          </label>
+          <label>
+            Title
+            <input type="text" id="user-title" maxlength="120" required />
+          </label>
+        </div>
+        <label>
+          Email
+          <input type="email" id="user-email" maxlength="160" required />
+        </label>
+        <label>
+          Avatar URL
+          <input type="text" id="user-avatar-url" maxlength="255" />
+        </label>
+        <div class="split">
+          <label>
+            Role
+            <select id="user-role-select"></select>
+          </label>
+          <label>
+            Enabled
+            <select id="user-enabled-select">
+              <option value="true">Enabled</option>
+              <option value="false">Disabled</option>
+            </select>
+          </label>
+        </div>
+        <div class="split">
+          <label>
+            New password
+            <input type="password" id="user-password-input" minlength="8" />
+          </label>
+        </div>
+        <div class="button-row full-width">
+          <button id="user-save-profile" type="button">Save changes</button>
+        </div>
+        <div>
+          <h4>User audit</h4>
+          <div id="user-audit" class="list"></div>
+          <div class="pager">
+            <button id="user-audit-prev" class="secondary" type="button">Prev</button>
+            <span id="user-audit-page">Page 1</span>
+            <button id="user-audit-next" class="secondary" type="button">Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

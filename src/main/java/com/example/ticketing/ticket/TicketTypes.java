@@ -23,7 +23,6 @@ public final class TicketTypes {
         NEW,
         IN_PROGRESS,
         BLOCKED,
-        RESOLVED,
         CLOSED
     }
 

@@ -38,4 +38,20 @@ public class UserSelfController {
         );
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/profile")
+    public UserDtos.UserResponse updateProfile(
+        @Valid @RequestBody UserDtos.UserProfileUpdateRequest request,
+        Authentication authentication
+    ) {
+        return UserDtos.UserResponse.from(
+            userSelfService.updateProfile(
+                authentication.getName(),
+                request.getDisplayName(),
+                request.getTitle(),
+                request.getAvatarUrl(),
+                request.getEmail()
+            )
+        );
+    }
 }

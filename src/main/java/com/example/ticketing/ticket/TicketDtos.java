@@ -253,6 +253,181 @@ public final class TicketDtos {
         }
     }
 
+    public static class TicketCountReport {
+        private long total;
+        private java.util.List<TicketStatusCountResponse> byStatus;
+
+        public TicketCountReport(long total, java.util.List<TicketStatusCountResponse> byStatus) {
+            this.total = total;
+            this.byStatus = byStatus;
+        }
+
+        public long getTotal() {
+            return total;
+        }
+
+        public java.util.List<TicketStatusCountResponse> getByStatus() {
+            return byStatus;
+        }
+    }
+
+    public static class EngineerReportRow {
+        private String engineer;
+        private long ticketsAssigned;
+        private long ticketsCompleted;
+        private double avgAssignedPerDay;
+        private double avgCompletedPerDay;
+        private double avgCompletionHours;
+
+        public EngineerReportRow(
+            String engineer,
+            long ticketsAssigned,
+            long ticketsCompleted,
+            double avgAssignedPerDay,
+            double avgCompletedPerDay,
+            double avgCompletionHours
+        ) {
+            this.engineer = engineer;
+            this.ticketsAssigned = ticketsAssigned;
+            this.ticketsCompleted = ticketsCompleted;
+            this.avgAssignedPerDay = avgAssignedPerDay;
+            this.avgCompletedPerDay = avgCompletedPerDay;
+            this.avgCompletionHours = avgCompletionHours;
+        }
+
+        public String getEngineer() {
+            return engineer;
+        }
+
+        public long getTicketsAssigned() {
+            return ticketsAssigned;
+        }
+
+        public long getTicketsCompleted() {
+            return ticketsCompleted;
+        }
+
+        public double getAvgAssignedPerDay() {
+            return avgAssignedPerDay;
+        }
+
+        public double getAvgCompletedPerDay() {
+            return avgCompletedPerDay;
+        }
+
+        public double getAvgCompletionHours() {
+            return avgCompletionHours;
+        }
+    }
+
+    public static class RequesterReportRow {
+        private String requester;
+        private long ticketsSubmitted;
+        private double avgCompletionHours;
+
+        public RequesterReportRow(String requester, long ticketsSubmitted, double avgCompletionHours) {
+            this.requester = requester;
+            this.ticketsSubmitted = ticketsSubmitted;
+            this.avgCompletionHours = avgCompletionHours;
+        }
+
+        public String getRequester() {
+            return requester;
+        }
+
+        public long getTicketsSubmitted() {
+            return ticketsSubmitted;
+        }
+
+        public double getAvgCompletionHours() {
+            return avgCompletionHours;
+        }
+    }
+
+    public static class DashboardSummary {
+        private long openCount;
+        private long closedCount;
+        private long overdueCount;
+        private double avgCompletionHours;
+        private java.util.List<TicketStatusCountResponse> openByStatus;
+
+        public DashboardSummary(
+            long openCount,
+            long closedCount,
+            long overdueCount,
+            double avgCompletionHours,
+            java.util.List<TicketStatusCountResponse> openByStatus
+        ) {
+            this.openCount = openCount;
+            this.closedCount = closedCount;
+            this.overdueCount = overdueCount;
+            this.avgCompletionHours = avgCompletionHours;
+            this.openByStatus = openByStatus;
+        }
+
+        public long getOpenCount() {
+            return openCount;
+        }
+
+        public long getClosedCount() {
+            return closedCount;
+        }
+
+        public long getOverdueCount() {
+            return overdueCount;
+        }
+
+        public double getAvgCompletionHours() {
+            return avgCompletionHours;
+        }
+
+        public java.util.List<TicketStatusCountResponse> getOpenByStatus() {
+            return openByStatus;
+        }
+    }
+
+    public static class BacklogAgingRow {
+        private TicketTypes.TicketStatus status;
+        private long openCount;
+        private double avgAgeHours;
+
+        public BacklogAgingRow(TicketTypes.TicketStatus status, long openCount, double avgAgeHours) {
+            this.status = status;
+            this.openCount = openCount;
+            this.avgAgeHours = avgAgeHours;
+        }
+
+        public TicketTypes.TicketStatus getStatus() {
+            return status;
+        }
+
+        public long getOpenCount() {
+            return openCount;
+        }
+
+        public double getAvgAgeHours() {
+            return avgAgeHours;
+        }
+    }
+
+    public static class SlaBucketRow {
+        private String bucket;
+        private long count;
+
+        public SlaBucketRow(String bucket, long count) {
+            this.bucket = bucket;
+            this.count = count;
+        }
+
+        public String getBucket() {
+            return bucket;
+        }
+
+        public long getCount() {
+            return count;
+        }
+    }
+
     public static class TicketAssignmentResponse {
         private Long id;
         private Long ticketId;

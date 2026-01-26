@@ -42,4 +42,25 @@ public class UserSelfService {
             user.getUsername()
         );
     }
+
+    public UserAccount updateProfile(
+        String username,
+        String displayName,
+        String title,
+        String avatarUrl,
+        String email
+    ) {
+        UserAccount user = getByUsername(username);
+        user.setDisplayName(displayName);
+        user.setTitle(title);
+        user.setAvatarUrl(avatarUrl);
+        user.setEmail(email);
+        userAuditService.log(
+            UserAuditAction.PROFILE_UPDATED,
+            user.getUsername(),
+            user.getRole(),
+            user.getUsername()
+        );
+        return user;
+    }
 }

@@ -10,7 +10,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.validation.Valid;
 
@@ -39,7 +42,8 @@ public class TicketController {
 
     @PostMapping
     public ResponseEntity<TicketDtos.TicketResponse> createTicket(
-        @Valid @RequestBody TicketDtos.TicketCreateRequest request
+        @Valid @RequestBody TicketDtos.TicketCreateRequest request,
+        Authentication authentication
     ) {
         Ticket ticket = new Ticket();
         ticket.setTitle(request.getTitle());
@@ -50,7 +54,8 @@ public class TicketController {
         ticket.setRequesterEmail(request.getRequesterEmail());
         ticket.setAssigneeName(request.getAssigneeName());
 
-        Ticket created = ticketService.createTicket(ticket);
+        TicketTypes.TicketRole actorRole = resolveActorRole(authentication);
+        Ticket created = ticketService.createTicket(ticket, actorRole, authentication.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(TicketDtos.TicketResponse.from(created));
     }
 
@@ -58,6 +63,8 @@ public class TicketController {
     public Page<TicketDtos.TicketResponse> listTickets(
         @RequestParam(required = false) String assignee,
         @RequestParam(required = false) TicketTypes.TicketStatus status,
+        @RequestParam(required = false) String search,
+        @RequestParam(defaultValue = "false") boolean excludeClosed,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "20") int size,
         @RequestParam(defaultValue = "createdAt,desc") String sort
@@ -67,13 +74,36 @@ public class TicketController {
         String sortDirection = parts.length > 1 ? parts[1] : "asc";
         Sort.Direction direction = Sort.Direction.fromOptionalString(sortDirection).orElse(Sort.Direction.ASC);
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by(direction, sortField));
-        return ticketService.listTickets(assignee, status, pageRequest)
+        return ticketService.listTickets(assignee, status, search, excludeClosed, pageRequest)
             .map(TicketDtos.TicketResponse::from);
     }
 
     @GetMapping("/{id}")
     public TicketDtos.TicketResponse getTicket(@PathVariable Long id) {
         return TicketDtos.TicketResponse.from(ticketService.getTicket(id));
+    }
+
+    @GetMapping("/queue")
+    public List<TicketDtos.TicketResponse> unassignedQueue(Authentication authentication) {
+        requireStaff(authentication);
+        return ticketService.listUnassignedQueue().stream()
+            .map(TicketDtos.TicketResponse::from)
+            .toList();
+    }
+
+    @PostMapping("/{id}/assign/me")
+    public TicketDtos.TicketResponse assignToMe(
+        @PathVariable Long id,
+        Authentication authentication
+    ) {
+        requireStaff(authentication);
+        Ticket updated = ticketService.assignTicket(
+            id,
+            authentication.getName(),
+            resolveActorRole(authentication),
+            authentication.getName()
+        );
+        return TicketDtos.TicketResponse.from(updated);
     }
 
     @PatchMapping("/{id}/status")
@@ -163,8 +193,36 @@ public class TicketController {
             .toList();
     }
 
+    @GetMapping("/{id}/audit/export")
+    public ResponseEntity<String> exportAudit(@PathVariable Long id) {
+        List<TicketAudit> entries = ticketService.listAudit(id);
+        StringBuilder csv = new StringBuilder();
+        csv.append("created_at,action,field,old_value,new_value,actor_role,actor_name\n");
+        for (TicketAudit entry : entries) {
+            csv.append(escapeCsv(entry.getCreatedAt()))
+                .append(',')
+                .append(escapeCsv(entry.getAction()))
+                .append(',')
+                .append(escapeCsv(entry.getFieldName()))
+                .append(',')
+                .append(escapeCsv(entry.getOldValue()))
+                .append(',')
+                .append(escapeCsv(entry.getNewValue()))
+                .append(',')
+                .append(escapeCsv(entry.getActorRole()))
+                .append(',')
+                .append(escapeCsv(entry.getActorName()))
+                .append('\n');
+        }
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.valueOf("text/csv"));
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=ticket-" + id + "-audit.csv");
+        return new ResponseEntity<>(csv.toString(), headers, HttpStatus.OK);
+    }
+
     @GetMapping("/reports/status-counts")
     public List<TicketDtos.TicketStatusCountResponse> statusCounts(
+        Authentication authentication,
         @RequestParam(required = false)
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
         LocalDateTime from,
@@ -172,8 +230,9 @@ public class TicketController {
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
         LocalDateTime to
     ) {
+        requireStaff(authentication);
         Map<TicketTypes.TicketStatus, Long> counts = new HashMap<>();
-        for (Ticket ticket : ticketService.listTickets(null, null, Pageable.unpaged())) {
+        for (Ticket ticket : ticketService.listTickets(null, null, null, Pageable.unpaged())) {
             if (!withinRange(ticket.getCreatedAt(), from, to)) {
                 continue;
             }
@@ -184,8 +243,31 @@ public class TicketController {
             .toList();
     }
 
+    @GetMapping("/reports/ticket-counts")
+    public TicketDtos.TicketCountReport ticketCounts(Authentication authentication) {
+        requireStaff(authentication);
+        return ticketService.getTicketCounts(null);
+    }
+
+    @GetMapping("/reports/dashboard")
+    public TicketDtos.DashboardSummary dashboardSummary(
+        Authentication authentication,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        LocalDateTime from,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        LocalDateTime to
+    ) {
+        TicketTypes.TicketRole role = resolveActorRole(authentication);
+        String requesterUsername = role == TicketTypes.TicketRole.REQUESTER ? authentication.getName() : null;
+        LocalDateTime[] range = resolveReportRange(from, to);
+        return ticketService.buildDashboardSummary(requesterUsername, range[0], range[1]);
+    }
+
     @GetMapping("/reports/assignee-workload")
     public List<TicketDtos.TicketAssigneeWorkloadResponse> assigneeWorkload(
+        Authentication authentication,
         @RequestParam(required = false) TicketTypes.TicketStatus status,
         @RequestParam(required = false)
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
@@ -194,8 +276,9 @@ public class TicketController {
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
         LocalDateTime to
     ) {
+        requireStaff(authentication);
         Map<String, Long> counts = new HashMap<>();
-        for (Ticket ticket : ticketService.listTickets(null, null, Pageable.unpaged())) {
+        for (Ticket ticket : ticketService.listTickets(null, null, null, Pageable.unpaged())) {
             if (status != null && ticket.getStatus() != status) {
                 continue;
             }
@@ -215,6 +298,7 @@ public class TicketController {
 
     @GetMapping("/reports/resolution-time")
     public TicketDtos.TicketResolutionTimeResponse resolutionTime(
+        Authentication authentication,
         @RequestParam(required = false)
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
         LocalDateTime from,
@@ -222,9 +306,10 @@ public class TicketController {
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
         LocalDateTime to
     ) {
+        requireStaff(authentication);
         long resolvedCount = 0;
         long totalSeconds = 0;
-        for (Ticket ticket : ticketService.listTickets(null, null, Pageable.unpaged())) {
+        for (Ticket ticket : ticketService.listTickets(null, null, null, Pageable.unpaged())) {
             if (ticket.getResolvedAt() != null && ticket.getCreatedAt() != null) {
                 if (!withinRange(ticket.getResolvedAt(), from, to)) {
                     continue;
@@ -244,6 +329,66 @@ public class TicketController {
         );
     }
 
+    @GetMapping("/reports/engineer-summary")
+    public List<TicketDtos.EngineerReportRow> engineerSummary(
+        Authentication authentication,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        LocalDateTime from,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        LocalDateTime to
+    ) {
+        requireStaff(authentication);
+        LocalDateTime[] range = resolveReportRange(from, to);
+        return ticketService.buildEngineerReport(range[0], range[1]);
+    }
+
+    @GetMapping("/reports/requester-summary")
+    public List<TicketDtos.RequesterReportRow> requesterSummary(
+        Authentication authentication,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        LocalDateTime from,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        LocalDateTime to
+    ) {
+        requireStaff(authentication);
+        LocalDateTime[] range = resolveReportRange(from, to);
+        return ticketService.buildRequesterReport(range[0], range[1]);
+    }
+
+    @GetMapping("/reports/backlog-aging")
+    public List<TicketDtos.BacklogAgingRow> backlogAging(
+        Authentication authentication,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        LocalDateTime from,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        LocalDateTime to
+    ) {
+        requireStaff(authentication);
+        LocalDateTime[] range = resolveReportRange(from, to);
+        return ticketService.buildBacklogAging(range[0], range[1]);
+    }
+
+    @GetMapping("/reports/sla-buckets")
+    public List<TicketDtos.SlaBucketRow> slaBuckets(
+        Authentication authentication,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        LocalDateTime from,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        LocalDateTime to
+    ) {
+        requireStaff(authentication);
+        LocalDateTime[] range = resolveReportRange(from, to);
+        return ticketService.buildSlaBuckets(range[0], range[1]);
+    }
+
     private boolean withinRange(LocalDateTime value, LocalDateTime from, LocalDateTime to) {
         if (value == null) {
             return false;
@@ -255,6 +400,30 @@ public class TicketController {
             return false;
         }
         return true;
+    }
+
+    private void requireStaff(Authentication authentication) {
+        TicketTypes.TicketRole role = resolveActorRole(authentication);
+        if (role == TicketTypes.TicketRole.REQUESTER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Reports require engineer or admin role.");
+        }
+    }
+
+    private LocalDateTime[] resolveReportRange(LocalDateTime from, LocalDateTime to) {
+        LocalDateTime end = to != null ? to : LocalDateTime.now();
+        LocalDateTime start = from != null ? from : end.minusDays(30);
+        return new LocalDateTime[] { start, end };
+    }
+
+    private String escapeCsv(Object value) {
+        if (value == null) {
+            return "";
+        }
+        String text = String.valueOf(value);
+        if (text.contains("\"") || text.contains(",") || text.contains("\n")) {
+            return "\"" + text.replace("\"", "\"\"") + "\"";
+        }
+        return text;
     }
 
     private TicketTypes.TicketRole resolveActorRole(Authentication authentication) {

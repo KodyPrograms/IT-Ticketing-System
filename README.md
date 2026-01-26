@@ -1,18 +1,39 @@
-# Ticketing
+# Ticketing Console
 
-Local development setup for the Ticketing Spring Boot app.
+An internal IT ticketing & service request system built with Spring Boot, MySQL, and a lightweight SPA. The focus is on role-aware workflows, auditability, and enterprise-ready reporting. Made as a proof of concept for my work. Feel free to critize it to your hearts desire.
 
-## Prerequisites
+## Live app
+
+This is a local-only demo.
+
+## Running locally
+
+### Things you need
 
 - Java 21
 - Maven 3.8+
 - Docker
 
-## Quick start (local MySQL via Docker)
+### The easy way
 
-1) Start MySQL
+I made an easy local testing script that you can run below that will start both back and front ends.
 
 ```bash
+git clone https://github.com/KodyPrograms/ticketing.git
+cd ticketing
+chmod +x start_local.sh
+./start_local.sh
+```
+
+Starts MySQL in Docker and runs the Spring Boot app on http://localhost:8080.
+
+### The harder way
+
+If you don't like things being easy you can do it this way as well.
+
+```bash
+# Terminal 1 - MySQL
+
 docker volume create ticketing-mysql-data
 
 docker run -d \
@@ -26,37 +47,59 @@ docker run -d \
   mysql:9.5
 ```
 
-2) Configure the app (already set in `src/main/resources/application.properties`)
-
-```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/ticketing?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-spring.datasource.username=ticketing_user
-spring.datasource.password=ticketing_pass
-spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
-```
-
-If you prefer different credentials, update both the `docker run` values and
-`src/main/resources/application.properties` accordingly.
-
-3) Run the app
-
 ```bash
+# Terminal 2 - Spring Boot
 mvn spring-boot:run
 ```
 
-The app starts on http://localhost:8080.
+Open http://localhost:8080
 
-## Default credentials (dev only)
+## Demo accounts (local)
 
-- Requester: `requester` / `requester123`
-- Engineer: `engineer` / `engineer123`
+All demo users use the same password: `admin123`
+
 - Admin: `admin` / `admin123`
+- Engineer: `engineer` / `admin123`
+- Requester: `requester` / `admin123`
 
-These users are stored in the local database and seeded via migration `V5__create_users.sql`.
+If you want realistic demo data (profiles, tickets, comments, audit trails), run:
 
-## Authentication (JWT)
+```bash
+scripts/seed_test_data.sql
+```
 
-Login to get a token:
+## Architecture
+
+```
+Browser (SPA)
+  |
+  v
+Spring Boot (Controller -> Service -> Repository)
+  |
+  v
+MySQL (Flyway migrations)
+```
+
+- Controllers enforce role rules and expose the API
+- Services implement workflow rules + audit logging
+- Repositories provide persistence with Spring Data JPA
+- Flyway manages schema migrations in `src/main/resources/db/migration`
+
+## Business rules (core)
+
+- Roles: Requester, Engineer, Admin
+- Requesters can only close their own tickets
+- Engineers can move tickets out of NEW and close tickets
+- Audit entries are created for all important changes (status, priority, assignee, comments)
+
+## API docs (OpenAPI / Swagger)
+
+Once running:
+
+- JSON: http://localhost:8080/v3/api-docs
+- UI: http://localhost:8080/swagger-ui/index.html
+
+## Auth (JWT)
 
 ```bash
 curl -X POST http://localhost:8080/api/auth/login \
@@ -64,90 +107,68 @@ curl -X POST http://localhost:8080/api/auth/login \
   -d '{"username":"admin","password":"admin123"}'
 ```
 
-Use the returned token for authenticated calls:
+Use the token:
 
 ```bash
 curl -H "Authorization: Bearer <token>" http://localhost:8080/api/tickets
 ```
 
-Ticket list supports pagination and sorting:
+## Tickets API (examples)
+
+```bash
+# List tickets (pagination + filters + search)
+curl -H "Authorization: Bearer <token>" \
+  "http://localhost:8080/api/tickets?page=0&size=20&sort=createdAt,desc&search=printer"
+
+# Update status
+curl -X PATCH http://localhost:8080/api/tickets/1/status \
+  -H "Authorization: Bearer <token>" \
+  -H 'Content-Type: application/json' \
+  -d '{"status":"IN_PROGRESS"}'
+
+# Add comment
+curl -X POST http://localhost:8080/api/tickets/1/comments \
+  -H "Authorization: Bearer <token>" \
+  -H 'Content-Type: application/json' \
+  -d '{"visibility":"PUBLIC","body":"Working on this now."}'
+```
+
+## Reports API (examples)
+
+Reports default to the last 30 days unless you pass dates.
 
 ```bash
 curl -H "Authorization: Bearer <token>" \
-  "http://localhost:8080/api/tickets?page=0&size=20&sort=createdAt,desc"
+  "http://localhost:8080/api/tickets/reports/engineer-summary"
+
+curl -H "Authorization: Bearer <token>" \
+  "http://localhost:8080/api/tickets/reports/requester-summary"
+
+curl -H "Authorization: Bearer <token>" \
+  "http://localhost:8080/api/tickets/reports/backlog-aging"
+
+curl -H "Authorization: Bearer <token>" \
+  "http://localhost:8080/api/tickets/reports/sla-buckets"
+
+curl -H "Authorization: Bearer <token>" \
+  "http://localhost:8080/api/tickets/reports/dashboard"
 ```
 
-## API docs (OpenAPI/Swagger)
-
-Start the app and visit:
-
-- OpenAPI JSON: http://localhost:8080/v3/api-docs
-- Swagger UI: http://localhost:8080/swagger-ui/index.html
-
-## User management (admin only)
+## User management (admin)
 
 ```bash
 curl -X POST http://localhost:8080/api/users \
   -H "Authorization: Bearer <token>" \
   -H 'Content-Type: application/json' \
-  -d '{"username":"newuser","password":"changeMe123","role":"ENGINEER","enabled":true}'
+  -d '{"username":"newuser","password":"changeMe123","role":"ENGINEER","enabled":true,"displayName":"New User","title":"Support","email":"new@company.local"}'
 
 curl -H "Authorization: Bearer <token>" http://localhost:8080/api/users
-
-curl -X PATCH http://localhost:8080/api/users/1/enabled \
-  -H "Authorization: Bearer <token>" \
-  -H 'Content-Type: application/json' \
-  -d '{"enabled":false}'
-
-curl -X PATCH http://localhost:8080/api/users/1/password \
-  -H "Authorization: Bearer <token>" \
-  -H 'Content-Type: application/json' \
-  -d '{"password":"newPass123"}'
 ```
-
-## User self-service
-
-```bash
-curl -H "Authorization: Bearer <token>" http://localhost:8080/api/users/me
-
-curl -X PATCH http://localhost:8080/api/users/me/password \
-  -H "Authorization: Bearer <token>" \
-  -H 'Content-Type: application/json' \
-  -d '{"currentPassword":"admin123","newPassword":"newPass123"}'
-```
-
-## User audit (admin only)
-
-```bash
-curl -H "Authorization: Bearer <token>" http://localhost:8080/api/users/audit
-
-curl -H "Authorization: Bearer <token>" \
-  "http://localhost:8080/api/users/audit?targetUsername=engineer"
-```
-
-## Reporting filters
-
-Reports accept optional ISO-8601 date ranges (UTC recommended).
-
-```bash
-curl -H "Authorization: Bearer <token>" \
-  "http://localhost:8080/api/tickets/reports/status-counts?from=2026-01-01T00:00:00&to=2026-02-01T00:00:00"
-
-curl -H "Authorization: Bearer <token>" \
-  "http://localhost:8080/api/tickets/reports/assignee-workload?status=IN_PROGRESS&from=2026-01-01T00:00:00"
-
-curl -H "Authorization: Bearer <token>" \
-  "http://localhost:8080/api/tickets/reports/resolution-time?from=2026-01-01T00:00:00"
-```
-
-## Useful Docker commands
-
-- Stop the DB: `docker stop ticketing-mysql`
-- Start the DB again: `docker start ticketing-mysql`
-- Remove the DB: `docker rm -f ticketing-mysql`
-- Remove data volume: `docker volume rm ticketing-mysql-data`
 
 ## Notes
 
-- Flyway will create the schema history table on first run.
-- You can add migrations under `src/main/resources/db/migration`.
+- UI is a single-page app served from `src/main/resources/static/`.
+- Flyway runs automatically on startup.
+- The database schema is fully versioned and repeatable via migrations.
+
+Enjoy!
