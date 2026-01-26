@@ -20,7 +20,7 @@ I made an easy local testing script that you can run below that will start both 
 
 ```bash
 git clone https://github.com/KodyPrograms/IT-Ticketing-System.git
-cd ticketing
+cd IT-Ticketing-System
 chmod +x start_local.sh
 ./start_local.sh
 ```
