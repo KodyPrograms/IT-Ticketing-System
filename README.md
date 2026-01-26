@@ -71,13 +71,9 @@ scripts/seed_test_data.sql
 ## Architecture
 
 ```
-Browser (SPA)
-  |
-  v
-Spring Boot (Controller -> Service -> Repository)
-  |
-  v
-MySQL (Flyway migrations)
+- Browser (SPA)
+- Spring Boot (Controller -> Service -> Repository)
+- MySQL (Flyway migrations)
 ```
 
 - Controllers enforce role rules and expose the API
