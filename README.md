@@ -19,7 +19,7 @@ This is a local-only demo.
 I made an easy local testing script that you can run below that will start both back and front ends.
 
 ```bash
-git clone https://github.com/KodyPrograms/ticketing.git
+git clone https://github.com/KodyPrograms/IT-Ticketing-System.git
 cd ticketing
 chmod +x start_local.sh
 ./start_local.sh
