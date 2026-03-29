@@ -232,7 +232,7 @@ public class TicketController {
     ) {
         requireStaff(authentication);
         Map<TicketTypes.TicketStatus, Long> counts = new HashMap<>();
-        for (Ticket ticket : ticketService.listTickets(null, null, null, Pageable.unpaged())) {
+        for (Ticket ticket : ticketService.listTickets(null, null, null, false, Pageable.unpaged())) {
             if (!withinRange(ticket.getCreatedAt(), from, to)) {
                 continue;
             }
@@ -278,7 +278,7 @@ public class TicketController {
     ) {
         requireStaff(authentication);
         Map<String, Long> counts = new HashMap<>();
-        for (Ticket ticket : ticketService.listTickets(null, null, null, Pageable.unpaged())) {
+        for (Ticket ticket : ticketService.listTickets(null, null, null, false, Pageable.unpaged())) {
             if (status != null && ticket.getStatus() != status) {
                 continue;
             }
@@ -309,7 +309,7 @@ public class TicketController {
         requireStaff(authentication);
         long resolvedCount = 0;
         long totalSeconds = 0;
-        for (Ticket ticket : ticketService.listTickets(null, null, null, Pageable.unpaged())) {
+        for (Ticket ticket : ticketService.listTickets(null, null, null, false, Pageable.unpaged())) {
             if (ticket.getResolvedAt() != null && ticket.getCreatedAt() != null) {
                 if (!withinRange(ticket.getResolvedAt(), from, to)) {
                     continue;
