@@ -1,6 +1,6 @@
 # Ticketing Console
 
-An internal IT ticketing & service request system built with Spring Boot, MySQL, and a lightweight SPA. The focus is on role-aware workflows, auditability, and enterprise-ready reporting. Made as a proof of concept for my work. Feel free to critize it to your hearts desire.
+An internal IT ticketing & service request system built with Spring Boot, PostgreSQL, and a lightweight SPA. The focus is on role-aware workflows, auditability, and enterprise-ready reporting. Made as a proof of concept for my work. Feel free to critize it to your hearts desire.
 
 ## Live app
 
@@ -8,15 +8,12 @@ This is a local-only demo.
 
 ## Deploying on Koyeb
 
-This project can run on Koyeb as a single Spring Boot web service, but you cannot use the local Docker MySQL setup there. The app needs:
+This project can run on Koyeb as a single Spring Boot web service backed by PostgreSQL. The app needs:
 
 - One Koyeb web service for the Spring Boot app
-- One reachable MySQL database
+- One reachable PostgreSQL database
 
-The database can be:
-
-- An external managed MySQL provider
-- A self-hosted MySQL instance you expose securely
+The simplest hosted option is Koyeb Database Services, which currently offer managed PostgreSQL.
 
 This repo is configured so Koyeb can inject runtime settings using environment variables.
 
@@ -24,9 +21,9 @@ This repo is configured so Koyeb can inject runtime settings using environment v
 
 Koyeb deploys this project cleanly from Git since it is a Maven Spring Boot app.
 
-### 2. Prepare a MySQL database
+### 2. Prepare a PostgreSQL database
 
-Create a MySQL database and note:
+Create a PostgreSQL database and note:
 
 - Host
 - Port
@@ -53,7 +50,7 @@ You do not need a custom start command for the standard Java buildpack flow.
 Set these on the Koyeb service:
 
 ```text
-SPRING_DATASOURCE_URL=jdbc:mysql://<host>:<port>/<database>?useSSL=true&requireSSL=true&serverTimezone=UTC
+SPRING_DATASOURCE_URL=jdbc:postgresql://<host>:<port>/<database>?sslmode=require
 SPRING_DATASOURCE_USERNAME=<username>
 SPRING_DATASOURCE_PASSWORD=<password>
 SECURITY_JWT_SECRET=<long-random-secret>
@@ -64,7 +61,7 @@ SECURITY_JWT_EXPIRATION_SECONDS=3600
 Notes:
 
 - Koyeb injects `PORT` automatically and the app now binds to it.
-- If your MySQL provider does not require TLS, adjust the JDBC URL accordingly.
+- If you are using a local PostgreSQL container, `jdbc:postgresql://localhost:5432/ticketing` is enough.
 - Use a strong JWT secret in Koyeb, not the development fallback from `application.properties`.
 
 ### 5. Deploy
@@ -73,27 +70,27 @@ After the first deploy:
 
 - Koyeb builds the jar with Maven
 - Spring Boot starts on the Koyeb-assigned port
-- Flyway creates or updates the schema in MySQL
+- Flyway creates or updates the schema in PostgreSQL
 
 If startup fails, check:
 
 - The JDBC URL format
 - Database network access rules
-- MySQL user permissions
+- PostgreSQL user permissions
 - Flyway migration errors in the Koyeb logs
 
 ### 6. Seed users if needed
 
 Koyeb will run schema migrations automatically, but it will not automatically create demo users unless your database already has them.
 
-If you want hosted demo data, import `scripts/seed_test_data.sql` into the deployed MySQL database after the app is up.
+If you want hosted demo data, import `scripts/seed_test_data.sql` into the deployed PostgreSQL database after the app is up.
 
 ### Koyeb checklist for this repo
 
 - Runtime: Java 21
 - Build: Maven
 - Web entrypoint: Spring Boot
-- Persistent dependency: external MySQL database
+- Persistent dependency: PostgreSQL database
 - Required secrets: datasource credentials and JWT secret
 
 ### Optional hardening before sharing the deployment
@@ -122,30 +119,32 @@ chmod +x start_local.sh
 ./start_local.sh
 ```
 
-Starts MySQL in Docker and runs the Spring Boot app on http://localhost:8080.
+Starts PostgreSQL in Docker and runs the Spring Boot app on http://localhost:8080.
 
 ### The harder way
 
 If you don't like things being easy you can do it this way as well.
 
 ```bash
-# Terminal 1 - MySQL
+# Terminal 1 - PostgreSQL
 
-docker volume create ticketing-mysql-data
+docker volume create ticketing-postgres-data
 
 docker run -d \
-  --name ticketing-mysql \
-  -e MYSQL_ROOT_PASSWORD=rootpass \
-  -e MYSQL_DATABASE=ticketing \
-  -e MYSQL_USER=ticketing_user \
-  -e MYSQL_PASSWORD=ticketing_pass \
-  -p 3306:3306 \
-  -v ticketing-mysql-data:/var/lib/mysql \
-  mysql:9.5
+  --name ticketing-postgres \
+  -e POSTGRES_DB=ticketing \
+  -e POSTGRES_USER=ticketing_user \
+  -e POSTGRES_PASSWORD=ticketing_pass \
+  -p 5432:5432 \
+  -v ticketing-postgres-data:/var/lib/postgresql/data \
+  postgres:17
 ```
 
 ```bash
 # Terminal 2 - Spring Boot
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/ticketing \
+SPRING_DATASOURCE_USERNAME=ticketing_user \
+SPRING_DATASOURCE_PASSWORD=ticketing_pass \
 mvn spring-boot:run
 ```
 
@@ -153,24 +152,21 @@ Open http://localhost:8080
 
 ## Demo accounts (local)
 
-All demo users use the same password: `admin123`
+The database is automatically populated with demo users and filler ticket data by Flyway on startup.
 
 - Admin: `admin` / `admin123`
-- Engineer: `engineer` / `admin123`
-- Requester: `requester` / `admin123`
+- Engineer: `engineer` / `engineer123`
+- Requester: `requester` / `requester123`
+- Additional demo users such as `liam`, `noah`, `emma`, `carlos`, and `zara` use `admin123`
 
-If you want realistic demo data (profiles, tickets, comments, audit trails), run:
-
-```bash
-scripts/seed_test_data.sql
-```
+If you want to reapply the filler dataset manually to an existing database, use [scripts/seed_test_data.sql](/home/mint/Documents/ticketing/scripts/seed_test_data.sql).
 
 ## Architecture
 
 ```
 - Browser (SPA)
 - Spring Boot (Controller -> Service -> Repository)
-- MySQL (Flyway migrations)
+- PostgreSQL (Flyway migrations)
 ```
 
 - Controllers enforce role rules and expose the API

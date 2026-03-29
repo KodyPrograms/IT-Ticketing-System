@@ -13,7 +13,7 @@ public final class AuthDtos {
         private String username;
 
         @NotBlank
-        @Size(min = 8, max = 128)
+        @Size(min = 7, max = 128)
         private String password;
 
         public String getUsername() {

@@ -1,27 +1,29 @@
--- Seed realistic demo data for the ticketing system.
--- Passwords:
--- admin: admin123
--- everyone else below: admin123
-
-BEGIN;
+UPDATE users
+SET password_hash = CASE username
+  WHEN 'admin' THEN '$2y$05$EaMWbX3oEm6So3PzNwQA.u4/kCUrJ0mbobDEMCD2yU8PKfE2FDLha'
+  WHEN 'engineer' THEN '$2y$05$pHZIwWo2nGrCmOCHWSRdVenpUbpNdW/mCBp1isDO/pAk57B6etZei'
+  WHEN 'requester' THEN '$2y$05$7sqaEdZLuV8K0.qMkA44XeJ4S.4dnPdPUjap/i4xkwM6AnvmC3C5y'
+  ELSE password_hash
+END
+WHERE username IN ('admin', 'engineer', 'requester');
 
 INSERT INTO users (username, password_hash, role, enabled, display_name, title, avatar_url, email)
 VALUES
-  ('admin', '$2y$05$6XaPVSjpZTeTClxzgljDZOryXACGn0ZZyBaenXybfDq2lZZCiqZhu', 'ADMIN', TRUE,
+  ('admin', '$2y$05$EaMWbX3oEm6So3PzNwQA.u4/kCUrJ0mbobDEMCD2yU8PKfE2FDLha', 'ADMIN', TRUE,
    'Sophia Grant', 'IT Operations Manager', 'https://i.pravatar.cc/150?img=5', 'sophia.grant@company.local'),
-  ('engineer', '$2y$05$2F49.yTINiDOhZNwpePByOmX6/rLYdILpP9SjOBc42HdOaZtt2agW', 'ENGINEER', TRUE,
+  ('engineer', '$2y$05$pHZIwWo2nGrCmOCHWSRdVenpUbpNdW/mCBp1isDO/pAk57B6etZei', 'ENGINEER', TRUE,
    'Maya Patel', 'Systems Engineer', 'https://i.pravatar.cc/150?img=13', 'maya.patel@company.local'),
-  ('requester', '$2y$05$2F49.yTINiDOhZNwpePByOmX6/rLYdILpP9SjOBc42HdOaZtt2agW', 'REQUESTER', TRUE,
+  ('requester', '$2y$05$7sqaEdZLuV8K0.qMkA44XeJ4S.4dnPdPUjap/i4xkwM6AnvmC3C5y', 'REQUESTER', TRUE,
    'Ava Carter', 'Project Coordinator', 'https://i.pravatar.cc/150?img=47', 'ava.carter@company.local'),
-  ('liam', '$2y$05$2F49.yTINiDOhZNwpePByOmX6/rLYdILpP9SjOBc42HdOaZtt2agW', 'ENGINEER', TRUE,
+  ('liam', '$2y$05$EaMWbX3oEm6So3PzNwQA.u4/kCUrJ0mbobDEMCD2yU8PKfE2FDLha', 'ENGINEER', TRUE,
    'Liam Chen', 'Network Engineer', 'https://i.pravatar.cc/150?img=15', 'liam.chen@company.local'),
-  ('noah', '$2y$05$2F49.yTINiDOhZNwpePByOmX6/rLYdILpP9SjOBc42HdOaZtt2agW', 'ENGINEER', TRUE,
+  ('noah', '$2y$05$EaMWbX3oEm6So3PzNwQA.u4/kCUrJ0mbobDEMCD2yU8PKfE2FDLha', 'ENGINEER', TRUE,
    'Noah Alvarez', 'Support Engineer', 'https://i.pravatar.cc/150?img=12', 'noah.alvarez@company.local'),
-  ('emma', '$2y$05$2F49.yTINiDOhZNwpePByOmX6/rLYdILpP9SjOBc42HdOaZtt2agW', 'REQUESTER', TRUE,
+  ('emma', '$2y$05$EaMWbX3oEm6So3PzNwQA.u4/kCUrJ0mbobDEMCD2yU8PKfE2FDLha', 'REQUESTER', TRUE,
    'Emma Brooks', 'HR Specialist', 'https://i.pravatar.cc/150?img=32', 'emma.brooks@company.local'),
-  ('carlos', '$2y$05$2F49.yTINiDOhZNwpePByOmX6/rLYdILpP9SjOBc42HdOaZtt2agW', 'REQUESTER', TRUE,
+  ('carlos', '$2y$05$EaMWbX3oEm6So3PzNwQA.u4/kCUrJ0mbobDEMCD2yU8PKfE2FDLha', 'REQUESTER', TRUE,
    'Carlos Nguyen', 'Finance Analyst', 'https://i.pravatar.cc/150?img=7', 'carlos.nguyen@company.local'),
-  ('zara', '$2y$05$2F49.yTINiDOhZNwpePByOmX6/rLYdILpP9SjOBc42HdOaZtt2agW', 'REQUESTER', TRUE,
+  ('zara', '$2y$05$EaMWbX3oEm6So3PzNwQA.u4/kCUrJ0mbobDEMCD2yU8PKfE2FDLha', 'REQUESTER', TRUE,
    'Zara Ahmed', 'Customer Success Lead', 'https://i.pravatar.cc/150?img=24', 'zara.ahmed@company.local')
 ON CONFLICT (username) DO UPDATE
 SET
@@ -181,5 +183,3 @@ VALUES
   ('PROFILE_UPDATED', 'admin', 'ADMIN', 'emma', NOW() - INTERVAL '22 days'),
   ('PROFILE_UPDATED', 'admin', 'ADMIN', 'carlos', NOW() - INTERVAL '22 days'),
   ('PROFILE_UPDATED', 'admin', 'ADMIN', 'zara', NOW() - INTERVAL '22 days');
-
-COMMIT;
