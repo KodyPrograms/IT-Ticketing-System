@@ -6,6 +6,103 @@ An internal IT ticketing & service request system built with Spring Boot, MySQL,
 
 This is a local-only demo.
 
+## Deploying on Koyeb
+
+This project can run on Koyeb as a single Spring Boot web service, but you cannot use the local Docker MySQL setup there. The app needs:
+
+- One Koyeb web service for the Spring Boot app
+- One reachable MySQL database
+
+The database can be:
+
+- An external managed MySQL provider
+- A self-hosted MySQL instance you expose securely
+
+This repo is configured so Koyeb can inject runtime settings using environment variables.
+
+### 1. Push the repo to GitHub
+
+Koyeb deploys this project cleanly from Git since it is a Maven Spring Boot app.
+
+### 2. Prepare a MySQL database
+
+Create a MySQL database and note:
+
+- Host
+- Port
+- Database name
+- Username
+- Password
+
+This app uses Flyway, so the schema migrations in `src/main/resources/db/migration` run automatically at startup.
+
+### 3. Create the Koyeb service
+
+In Koyeb:
+
+1. Click `Create Web Service`
+2. Choose `GitHub`
+3. Select this repository
+4. Let Koyeb detect the app as a Java/Maven service
+5. Set the branch you want to deploy
+
+You do not need a custom start command for the standard Java buildpack flow.
+
+### 4. Add environment variables
+
+Set these on the Koyeb service:
+
+```text
+SPRING_DATASOURCE_URL=jdbc:mysql://<host>:<port>/<database>?useSSL=true&requireSSL=true&serverTimezone=UTC
+SPRING_DATASOURCE_USERNAME=<username>
+SPRING_DATASOURCE_PASSWORD=<password>
+SECURITY_JWT_SECRET=<long-random-secret>
+SECURITY_JWT_ISSUER=ticketing
+SECURITY_JWT_EXPIRATION_SECONDS=3600
+```
+
+Notes:
+
+- Koyeb injects `PORT` automatically and the app now binds to it.
+- If your MySQL provider does not require TLS, adjust the JDBC URL accordingly.
+- Use a strong JWT secret in Koyeb, not the development fallback from `application.properties`.
+
+### 5. Deploy
+
+After the first deploy:
+
+- Koyeb builds the jar with Maven
+- Spring Boot starts on the Koyeb-assigned port
+- Flyway creates or updates the schema in MySQL
+
+If startup fails, check:
+
+- The JDBC URL format
+- Database network access rules
+- MySQL user permissions
+- Flyway migration errors in the Koyeb logs
+
+### 6. Seed users if needed
+
+Koyeb will run schema migrations automatically, but it will not automatically create demo users unless your database already has them.
+
+If you want hosted demo data, import `scripts/seed_test_data.sql` into the deployed MySQL database after the app is up.
+
+### Koyeb checklist for this repo
+
+- Runtime: Java 21
+- Build: Maven
+- Web entrypoint: Spring Boot
+- Persistent dependency: external MySQL database
+- Required secrets: datasource credentials and JWT secret
+
+### Optional hardening before sharing the deployment
+
+- Restrict Swagger in production
+- Add an admin bootstrap flow instead of relying on seeded users
+- Add a production CORS policy if the frontend and API ever split across domains
+- Add health/readiness endpoints if you want stricter deployment checks
+
 ## Running locally
 
 ### Things you need
