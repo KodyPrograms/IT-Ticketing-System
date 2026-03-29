@@ -58,6 +58,8 @@ SECURITY_JWT_ISSUER=ticketing
 SECURITY_JWT_EXPIRATION_SECONDS=3600
 ```
 
+This app also supports Koyeb-style `DATABASE_URL` values like `postgres://user:pass@host:5432/dbname` and will convert them to JDBC at startup if `SPRING_DATASOURCE_URL` is not set.
+
 Notes:
 
 - Koyeb injects `PORT` automatically and the app now binds to it.
@@ -120,6 +122,8 @@ chmod +x start_local.sh
 ```
 
 Starts PostgreSQL in Docker and runs the Spring Boot app on http://localhost:8080.
+
+`start_local.sh` always uses the local Docker PostgreSQL container. Hosted environments like Koyeb should use service-level environment variables such as `DATABASE_URL` or `SPRING_DATASOURCE_*`.
 
 ### The harder way
 

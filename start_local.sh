@@ -11,14 +11,14 @@ DB_NAME="ticketing"
 DB_USER="ticketing_user"
 DB_PASSWORD="ticketing_pass"
 
-if ! command -v docker >/dev/null 2>&1; then
-  echo "Docker is required but not installed or not on PATH." >&2
-  exit 1
-fi
-
 if command -v lsof >/dev/null 2>&1 && lsof -iTCP:"${APP_PORT}" -sTCP:LISTEN -n -P >/dev/null 2>&1; then
   echo "Port ${APP_PORT} is already in use. The app may already be running on http://localhost:${APP_PORT}." >&2
   echo "Stop the existing process or run with APP_PORT=<port> ./start_local.sh" >&2
+  exit 1
+fi
+
+if ! command -v docker >/dev/null 2>&1; then
+  echo "Docker is required but not installed or not on PATH." >&2
   exit 1
 fi
 
