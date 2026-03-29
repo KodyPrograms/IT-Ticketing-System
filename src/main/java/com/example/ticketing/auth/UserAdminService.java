@@ -45,13 +45,13 @@ public class UserAdminService {
         if (userAccountRepository.findByUsername(username).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists.");
         }
+        rejectAvatarChange(avatarUrl);
         UserAccount user = new UserAccount();
         user.setUsername(username);
         user.setPasswordHash(passwordEncoder.encode(rawPassword));
         user.setRole(role);
         user.setDisplayName(displayName);
         user.setTitle(title);
-        user.setAvatarUrl(avatarUrl);
         user.setEmail(email);
         if (enabled != null) {
             user.setEnabled(enabled);
@@ -136,9 +136,9 @@ public class UserAdminService {
         TicketTypes.TicketRole actorRole
     ) {
         UserAccount user = getUser(id);
+        rejectAvatarChange(user.getAvatarUrl(), avatarUrl);
         user.setDisplayName(displayName);
         user.setTitle(title);
-        user.setAvatarUrl(avatarUrl);
         user.setEmail(email);
         userAuditService.log(
             UserAuditAction.PROFILE_UPDATED,
@@ -183,5 +183,21 @@ public class UserAdminService {
     public UserAccount getUser(Long id) {
         return userAccountRepository.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
+    }
+
+    private void rejectAvatarChange(String avatarUrl) {
+        if (avatarUrl != null && !avatarUrl.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Avatar changes are disabled.");
+        }
+    }
+
+    private void rejectAvatarChange(String currentAvatarUrl, String requestedAvatarUrl) {
+        if (!normalize(currentAvatarUrl).equals(normalize(requestedAvatarUrl))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Avatar changes are disabled.");
+        }
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.trim();
     }
 }

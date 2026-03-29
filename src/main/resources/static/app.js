@@ -84,7 +84,6 @@ const userDetailModal = document.getElementById('user-detail-modal');
 const userDetailHeader = document.getElementById('user-detail-header');
 const userDisplayName = document.getElementById('user-display-name');
 const userTitle = document.getElementById('user-title');
-const userAvatarUrl = document.getElementById('user-avatar-url');
 const userEmail = document.getElementById('user-email');
 const userRoleSelect = document.getElementById('user-role-select');
 const userEnabledSelect = document.getElementById('user-enabled-select');
@@ -107,7 +106,6 @@ const profileDetails = document.getElementById('profile-details');
 const profilePasswordForm = document.getElementById('profile-password-form');
 const profileDisplayName = document.getElementById('profile-display-name');
 const profileTitle = document.getElementById('profile-title');
-const profileAvatarUrl = document.getElementById('profile-avatar-url');
 const profileEmail = document.getElementById('profile-email');
 const profileSaveBtn = document.getElementById('profile-save-btn');
 const profileAvatar = document.getElementById('profile-avatar');
@@ -326,10 +324,6 @@ const applyUserDetailControls = () => {
   if (userEmail) {
     userEmail.value = selectedUser.email || '';
     userEmail.disabled = !canManage;
-  }
-  if (userAvatarUrl) {
-    userAvatarUrl.value = selectedUser.avatarUrl || '';
-    userAvatarUrl.disabled = !canManage;
   }
   if (userEnabledSelect) {
     userEnabledSelect.value = selectedUser.enabled ? 'true' : 'false';
@@ -1379,9 +1373,6 @@ const loadProfile = async () => {
   if (profileEmail) {
     profileEmail.value = profile.email || '';
   }
-  if (profileAvatarUrl) {
-    profileAvatarUrl.value = profile.avatarUrl || '';
-  }
   if (profileAvatarPreview) {
     profileAvatarPreview.src = profile.avatarUrl || '';
     profileAvatarPreview.classList.toggle('hidden', !profile.avatarUrl);
@@ -1832,13 +1823,11 @@ if (userSaveProfile) {
       displayName: userDisplayName.value,
       title: userTitle.value,
       email: userEmail.value,
-      avatarUrl: userAvatarUrl.value,
     };
     if (
       profilePayload.displayName !== selectedUser.displayName ||
       profilePayload.title !== selectedUser.title ||
-      profilePayload.email !== selectedUser.email ||
-      profilePayload.avatarUrl !== selectedUser.avatarUrl
+      profilePayload.email !== selectedUser.email
     ) {
       updates.push(
         request(`/api/users/${selectedUser.id}/profile`, {
@@ -1938,7 +1927,6 @@ if (profileSaveBtn) {
         displayName: profileDisplayName.value,
         title: profileTitle.value,
         email: profileEmail.value,
-        avatarUrl: profileAvatarUrl.value,
       }),
     });
     await loadProfile();

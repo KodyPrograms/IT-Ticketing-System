@@ -51,9 +51,9 @@ public class UserSelfService {
         String email
     ) {
         UserAccount user = getByUsername(username);
+        rejectAvatarChange(user.getAvatarUrl(), avatarUrl);
         user.setDisplayName(displayName);
         user.setTitle(title);
-        user.setAvatarUrl(avatarUrl);
         user.setEmail(email);
         userAuditService.log(
             UserAuditAction.PROFILE_UPDATED,
@@ -62,5 +62,13 @@ public class UserSelfService {
             user.getUsername()
         );
         return user;
+    }
+
+    private void rejectAvatarChange(String currentAvatarUrl, String requestedAvatarUrl) {
+        String current = currentAvatarUrl == null ? "" : currentAvatarUrl.trim();
+        String requested = requestedAvatarUrl == null ? "" : requestedAvatarUrl.trim();
+        if (!current.equals(requested)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Avatar changes are disabled.");
+        }
     }
 }
