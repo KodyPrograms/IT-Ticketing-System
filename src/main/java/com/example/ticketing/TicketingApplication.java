@@ -10,12 +10,30 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class TicketingApplication {
 
 	public static void main(String[] args) {
+		applyHostedProfileFallback();
 		applyKoyebDatabaseFallback();
 		SpringApplication.run(TicketingApplication.class, args);
 	}
 
+	private static void applyHostedProfileFallback() {
+		if (hasText(System.getenv("SPRING_DATASOURCE_URL"))
+			|| hasText(System.getenv("DATABASE_URL"))
+			|| hasText(System.getenv("DATABASE_HOST"))
+			|| hasText(System.getenv("SPRING_PROFILES_ACTIVE"))) {
+			return;
+		}
+
+		if (hasText(System.getenv("PORT"))) {
+			System.setProperty("spring.profiles.active", "koyeb");
+		}
+	}
+
 	private static void applyKoyebDatabaseFallback() {
 		if (hasText(System.getenv("SPRING_DATASOURCE_URL"))) {
+			return;
+		}
+
+		if (applyDatabasePartsFallback()) {
 			return;
 		}
 
@@ -55,6 +73,35 @@ public class TicketingApplication {
 		} catch (URISyntaxException ignored) {
 			// If DATABASE_URL is malformed, Spring will fall back to its normal config path.
 		}
+	}
+
+	private static boolean applyDatabasePartsFallback() {
+		String host = System.getenv("DATABASE_HOST");
+		String name = System.getenv("DATABASE_NAME");
+		if (!hasText(host) || !hasText(name)) {
+			return false;
+		}
+
+		String port = hasText(System.getenv("DATABASE_PORT")) ? System.getenv("DATABASE_PORT") : "5432";
+		String sslMode = hasText(System.getenv("DATABASE_SSL_MODE")) ? System.getenv("DATABASE_SSL_MODE") : "require";
+		String jdbcUrl = "jdbc:postgresql://" + host + ":" + port + "/" + name + "?sslmode=" + sslMode;
+		System.setProperty("spring.datasource.url", jdbcUrl);
+
+		if (!hasText(System.getenv("SPRING_DATASOURCE_USERNAME"))) {
+			String username = System.getenv("DATABASE_USER");
+			if (hasText(username)) {
+				System.setProperty("spring.datasource.username", username);
+			}
+		}
+
+		if (!hasText(System.getenv("SPRING_DATASOURCE_PASSWORD"))) {
+			String password = System.getenv("DATABASE_PASSWORD");
+			if (hasText(password)) {
+				System.setProperty("spring.datasource.password", password);
+			}
+		}
+
+		return true;
 	}
 
 	private static boolean hasText(String value) {
