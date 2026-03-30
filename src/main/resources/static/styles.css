@@ -1148,6 +1148,16 @@ body.dark .table-wrap {
   font-size: 0.9rem;
 }
 
+.info-banner {
+  margin: 0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(28, 141, 136, 0.1);
+  color: var(--teal);
+  border: 1px solid rgba(28, 141, 136, 0.18);
+  font-size: 0.9rem;
+}
+
 .token-row {
   margin-top: 12px;
   font-size: 0.85rem;

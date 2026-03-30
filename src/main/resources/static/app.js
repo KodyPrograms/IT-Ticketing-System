@@ -4,6 +4,7 @@ const UNASSIGNED_VALUE = 'UNASSIGNED';
 
 const loginForm = document.getElementById('login-form');
 const loginError = document.getElementById('login-error');
+const loginPrefillNote = document.getElementById('login-prefill-note');
 const logoutBtn = document.getElementById('logout-btn');
 const tokenStatus = document.getElementById('token-status');
 const sidebarUsername = document.getElementById('sidebar-username');
@@ -133,8 +134,30 @@ let ticketHasMore = true;
 let ticketLoading = false;
 let ticketsCache = [];
 
+const LIVE_ENGINEER_CREDENTIALS = {
+  username: 'engineer',
+  password: 'engineer123',
+};
+
 const setApiStatus = (text) => {
   apiStatus.textContent = `API status: ${text}`;
+};
+
+const shouldPrefillEngineerLogin = () => window.location.protocol !== 'file:';
+
+const applyLiveEngineerLoginPrefill = () => {
+  if (!loginForm) return;
+  const usernameInput = loginForm.elements.namedItem('username');
+  const passwordInput = loginForm.elements.namedItem('password');
+  const shouldPrefill = shouldPrefillEngineerLogin();
+  if (loginPrefillNote) {
+    loginPrefillNote.classList.toggle('hidden', !shouldPrefill);
+  }
+  if (!shouldPrefill || !usernameInput || !passwordInput) {
+    return;
+  }
+  usernameInput.value = LIVE_ENGINEER_CREDENTIALS.username;
+  passwordInput.value = LIVE_ENGINEER_CREDENTIALS.password;
 };
 
 const getToken = () => localStorage.getItem(tokenKey);
@@ -602,6 +625,9 @@ const showView = (viewName) => {
   }
   if (viewName === 'admin' && canManageUsers()) {
     loadAdminUsers().catch(() => {});
+  }
+  if (viewName === 'login') {
+    applyLiveEngineerLoginPrefill();
   }
 };
 
